@@ -1,0 +1,9 @@
+services:
+  pdn-ner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pdn-ner
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8010:8000"
