@@ -27,9 +27,9 @@ type Detection struct {
 var (
 	spacesRe = regexp.MustCompile(`\s+`)
 
-	addressContextRe = regexp.MustCompile(`(?iu)\b(?:адрес|доставка|проживает|живет|живёт|зарегистрирован|регистрация|прописка|г\.|город|ул\.|улица|проспект|пр-т|пер\.|переулок|д\.|дом|кв\.|квартира|офис|корпус|строение|шоссе|набережная|область|район)\b`)
+	addressContextRe = regexp.MustCompile(unicodeWordPattern(`адрес|доставка|проживает|живет|живёт|зарегистрирован|регистрация|прописка|г\.|город|ул\.|улица|проспект|пр-т|пер\.|переулок|д\.|дом|кв\.|квартира|офис|корпус|строение|шоссе|набережная|область|район`))
 
-	organizationPersonalContextRe = regexp.MustCompile(`(?iu)\b(?:сотрудник|работник|директор|бухгалтер|менеджер|клиент|пациент|контактное\s+лицо|представитель|заявитель|получатель|покупатель|должность|зарплата|уволен|увольнение|договор|заказ|заявка|тикет)\b`)
+	organizationPersonalContextRe = regexp.MustCompile(unicodeWordPattern(`сотрудник|работник|директор|бухгалтер|менеджер|клиент|пациент|контактное\s+лицо|представитель|заявитель|получатель|покупатель|должность|зарплата|уволен|увольнение|договор|заказ|заявка|тикет`))
 
 	emailRe = regexp.MustCompile(`(?i)\b[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}\b`)
 
@@ -51,16 +51,20 @@ var (
 
 	apiKeyRe = regexp.MustCompile(`(?i)\b(?:api[_-]?key|access[_-]?token|refresh[_-]?token|secret|bearer)\s*[:=]\s*[a-z0-9._\-]{16,}\b`)
 
-	vehiclePlateRe = regexp.MustCompile(`(?iu)\b[авекмнорстухabekmhopctyx]\s?\d{3}\s?[авекмнорстухabekmhopctyx]{2}\s?\d{2,3}\b`)
-
 	vinRe = regexp.MustCompile(`(?i)\b[A-HJ-NPR-Z0-9]{17}\b`)
 
-	birthDateContextRe = regexp.MustCompile(`(?iu)\b(?:дата\s+рождения|др|родился|родилась|возраст|лет)\b`)
+	vehiclePlateRe = regexp.MustCompile(`(?i)(?:^|[^\p{L}\p{N}_])[авекмнорстухabekmhopctyx]\s?\d{3}\s?[авекмнорстухabekmhopctyx]{2}\s?\d{2,3}(?:$|[^\p{L}\p{N}_])`)
 
-	documentDateContextRe = regexp.MustCompile(`(?iu)\b(?:паспорт|выдан|действителен|снилс|инн|полис|омс|дмс|водительское|удостоверение)\b`)
+	birthDateContextRe = regexp.MustCompile(unicodeWordPattern(`дата\s+рождения|др|родился|родилась|возраст|лет`))
 
-	medicalDateContextRe = regexp.MustCompile(`(?iu)\b(?:пациент|диагноз|анализ|при[её]м|госпитализация|лечение|рецепт|беременность|инвалидность)\b`)
+	documentDateContextRe = regexp.MustCompile(unicodeWordPattern(`паспорт|выдан|действителен|снилс|инн|полис|омс|дмс|водительское|удостоверение`))
+
+	medicalDateContextRe = regexp.MustCompile(unicodeWordPattern(`пациент|диагноз|анализ|при[её]м|госпитализация|лечение|рецепт|беременность|инвалидность`))
 )
+
+func unicodeWordPattern(words string) string {
+	return `(?i)(?:^|[^\p{L}\p{N}_])(?:` + words + `)(?:$|[^\p{L}\p{N}_])`
+}
 
 func CheckBeforeForward(ctx context.Context, text string, natasha *NatashaClient) (Decision, error) {
 	normalized := Normalize(text)
