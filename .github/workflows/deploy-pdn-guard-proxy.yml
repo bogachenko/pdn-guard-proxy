@@ -1,4 +1,3 @@
-# .github/workflows/deploy-pdn-guard-proxy.yml
 name: Deploy PDN Guard Proxy
 
 on:
@@ -6,7 +5,13 @@ on:
     branches:
       - main
     paths:
-      - "pdn-guard-proxy/**"
+      - "cmd/**"
+      - "internal/**"
+      - "pdn-ner/**"
+      - "deploy/**"
+      - "go.mod"
+      - "go.sum"
+      - "Makefile"
       - ".github/workflows/deploy-pdn-guard-proxy.yml"
   workflow_dispatch:
 
@@ -34,15 +39,13 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version-file: pdn-guard-proxy/go.mod
-          cache-dependency-path: pdn-guard-proxy/go.sum
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
 
       - name: Test
-        working-directory: pdn-guard-proxy
         run: go test ./...
 
       - name: Build Linux binary
-        working-directory: pdn-guard-proxy
         run: |
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
             -trimpath \
@@ -61,7 +64,7 @@ jobs:
         run: |
           rsync -az --delete \
             -e "ssh -p $DEPLOY_PORT -i ~/.ssh/id_ed25519" \
-            pdn-guard-proxy/ \
+            ./ \
             "$DEPLOY_USER@$DEPLOY_HOST:/opt/pdn-guard-proxy/"
 
       - name: Restart service
