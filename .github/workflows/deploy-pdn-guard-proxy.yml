@@ -75,6 +75,10 @@ jobs:
       - name: Upload release
         run: |
           rsync -az --delete \
+            --exclude ".git/" \
+            --exclude ".github/" \
+            --exclude "pdn_guard_deploy_key" \
+            --exclude "pdn_guard_deploy_key.pub" \
             -e "ssh -p $DEPLOY_PORT -i ~/.ssh/id_ed25519" \
             ./ \
             "$DEPLOY_USER@$DEPLOY_HOST:/opt/pdn-guard-proxy/"
