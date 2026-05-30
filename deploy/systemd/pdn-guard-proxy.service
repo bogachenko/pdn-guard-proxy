@@ -11,8 +11,8 @@ Group=deploy
 WorkingDirectory=/opt/pdn-guard-proxy
 ExecStart=/opt/pdn-guard-proxy/pdn-guard-proxy
 
-Environment=LISTEN_ADDR=127.0.0.1:8080
-Environment=TARGET_BASE_URL=http://127.0.0.1:9000
+Environment=LISTEN_ADDR=127.0.0.1:18080
+Environment=TARGET_BASE_URL=http://127.0.0.1:8080
 Environment=NATASHA_BASE_URL=http://127.0.0.1:8010
 Environment=REQUEST_TIMEOUT_SECONDS=30
 Environment=MAX_BODY_BYTES=1048576
