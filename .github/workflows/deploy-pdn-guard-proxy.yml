@@ -56,8 +56,20 @@ jobs:
       - name: Prepare SSH
         run: |
           mkdir -p ~/.ssh
-          printf "%s" "$DEPLOY_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
+
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          key = os.environ["DEPLOY_KEY"].strip()
+          key = key.replace("\\n", "\n")
+
+          key_path = Path.home() / ".ssh" / "id_ed25519"
+          key_path.write_text(key + "\n")
+          key_path.chmod(0o600)
+          PY
+
+          ssh-keygen -y -f ~/.ssh/id_ed25519 > /dev/null
           ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
 
       - name: Upload release
