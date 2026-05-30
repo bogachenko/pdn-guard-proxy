@@ -82,6 +82,16 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	inspectionText := buildInspectionText(r, body)
+	if strings.TrimSpace(inspectionText) == "" {
+		r.Body = io.NopCloser(bytes.NewReader(body))
+		r.ContentLength = int64(len(body))
+		r.GetBody = func() (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewReader(body)), nil
+		}
+
+		h.reverseProxy.ServeHTTP(w, r)
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), h.cfg.RequestTimeout)
 	defer cancel()
