@@ -102,6 +102,20 @@ jobs:
           sudo systemctl enable pdn-guard-proxy
           sudo systemctl restart pdn-guard-proxy
 
-          curl -fsS http://127.0.0.1:8010/health
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8010/health >/dev/null; then
+              break
+            fi
+
+            if [ "$i" -eq 60 ]; then
+              echo "pdn-ner health check failed"
+              docker ps -a
+              docker logs --tail=200 pdn-ner
+              exit 1
+            fi
+
+            sleep 2
+          done
+
           systemctl is-active --quiet pdn-guard-proxy
           REMOTE
