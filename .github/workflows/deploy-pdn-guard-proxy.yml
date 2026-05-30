@@ -1,0 +1,88 @@
+# .github/workflows/deploy-pdn-guard-proxy.yml
+name: Deploy PDN Guard Proxy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "pdn-guard-proxy/**"
+      - ".github/workflows/deploy-pdn-guard-proxy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-pdn-guard-proxy
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      DEPLOY_HOST: ${{ secrets.PDN_DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ secrets.PDN_DEPLOY_PORT }}
+      DEPLOY_USER: ${{ secrets.PDN_DEPLOY_USER }}
+      DEPLOY_KEY: ${{ secrets.PDN_DEPLOY_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: pdn-guard-proxy/go.mod
+          cache-dependency-path: pdn-guard-proxy/go.sum
+
+      - name: Test
+        working-directory: pdn-guard-proxy
+        run: go test ./...
+
+      - name: Build Linux binary
+        working-directory: pdn-guard-proxy
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+            -trimpath \
+            -ldflags="-s -w" \
+            -o pdn-guard-proxy \
+            ./cmd/proxy
+
+      - name: Prepare SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf "%s" "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload release
+        run: |
+          rsync -az --delete \
+            -e "ssh -p $DEPLOY_PORT -i ~/.ssh/id_ed25519" \
+            pdn-guard-proxy/ \
+            "$DEPLOY_USER@$DEPLOY_HOST:/opt/pdn-guard-proxy/"
+
+      - name: Restart service
+        run: |
+          ssh -p "$DEPLOY_PORT" -i ~/.ssh/id_ed25519 "$DEPLOY_USER@$DEPLOY_HOST" <<'REMOTE'
+          set -euo pipefail
+
+          cd /opt/pdn-guard-proxy
+
+          chmod +x /opt/pdn-guard-proxy/pdn-guard-proxy
+
+          docker compose -f pdn-ner/docker-compose.yml up -d --build
+
+          sudo install -m 0644 \
+            /opt/pdn-guard-proxy/deploy/systemd/pdn-guard-proxy.service \
+            /etc/systemd/system/pdn-guard-proxy.service
+
+          sudo systemctl daemon-reload
+          sudo systemctl enable pdn-guard-proxy
+          sudo systemctl restart pdn-guard-proxy
+
+          curl -fsS http://127.0.0.1:8010/health
+          systemctl is-active --quiet pdn-guard-proxy
+          REMOTE

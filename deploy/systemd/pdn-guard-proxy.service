@@ -1,0 +1,29 @@
+# pdn-guard-proxy/deploy/systemd/pdn-guard-proxy.service
+[Unit]
+Description=SellerProof PDN Guard Proxy
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=deploy
+Group=deploy
+WorkingDirectory=/opt/pdn-guard-proxy
+ExecStart=/opt/pdn-guard-proxy/pdn-guard-proxy
+
+Environment=LISTEN_ADDR=127.0.0.1:8080
+Environment=TARGET_BASE_URL=http://127.0.0.1:9000
+Environment=NATASHA_BASE_URL=http://127.0.0.1:8010
+Environment=REQUEST_TIMEOUT_SECONDS=30
+Environment=MAX_BODY_BYTES=1048576
+
+Restart=always
+RestartSec=3
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
